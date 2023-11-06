@@ -1,24 +1,64 @@
-# Use the official Tomcat image as the base image
-FROM tomcat:10.1.13-jdk17
+# Stage 1: Build Stage
+FROM ubuntu:latest as builder
 
-# Set metadata for the image
-LABEL author="Akin"
-LABEL project="jendarey-voting-app-project"
+# Set the working directory
+WORKDIR /app
 
-# Remove the default Tomcat applications
-RUN rm -rf /usr/local/tomcat/webapps/*
+# Change hostname to 'elb-test'
+RUN hostnamectl set-hostname elb-test
 
-# Copy the .war file into the Tomcat webapps directory
-COPY target/*.war /usr/local/tomcat/webapps/ROOT.war
+# Update and upgrade the system
+RUN apt-get update && apt-get upgrade -y
 
-# Expose port 8080 for the application
-EXPOSE 8080
+# Install build dependencies
+RUN apt-get install -y wget unzip openjdk-17-jdk git maven
 
-# Define the default command to start Tomcat
-CMD ["catalina.sh", "run"]
+# Clone the repository
+RUN git clone https://github.com/JendareyTechnologies/Jendarey-Engineers-Voting-Result-App-War-Project1.git
 
-# docker build . -t jendaredocker/jendarey-voting-app-one
-# docker run -d -p 10000:8080 --name=voting-app-one jendaredocker/jendarey-voting-app-one:latest
+# Navigate to the project directory
+WORKDIR /app/Jendarey-Engineers-Voting-Result-App-War-Project1
+
+# Build the application war file using Maven
+RUN mvn clean install
+
+# Stage 2: Runtime Stage
+FROM ubuntu:latest
+
+# Set the working directory
+WORKDIR /app
+
+# Copy artifacts from the build stage
+COPY --from=builder /app/Jendarey-Engineers-Voting-Result-App-War-Project1/target/votingappweb.war /app/
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y wget unzip openjdk-17-jdk
+
+# Download and unzip Tomcat
+ARG TOMCAT_VERSION="10.1.14"
+ARG TOMCAT_DIR="apache-tomcat-$TOMCAT_VERSION"
+RUN wget "https://dlcdn.apache.org/tomcat/tomcat-10/v$TOMCAT_VERSION/bin/$TOMCAT_DIR.zip" && \
+    unzip "$TOMCAT_DIR.zip" && \
+    rm -rf "$TOMCAT_DIR.zip" && \
+    mv "$TOMCAT_DIR" tomcat10
+
+# Set permissions and ownership
+RUN chmod 755 -R tomcat10 && \
+    useradd -r -u 1001 -m -d /app -s /sbin/nologin -c "Tomcat User" tomcat && \
+    chown -R tomcat:tomcat tomcat10
+
+# Move the application war file to Tomcat's webapps directory
+RUN cp votingappweb.war tomcat10/webapps/
+
+# Switch to the 'tomcat' user
+USER tomcat
+
+# Start Tomcat
+CMD ["./tomcat10/bin/startup.sh"]
+
+
+# docker build . -t jendaredocker/jendarey-voting-app-new
+# docker run -d -p 10000:8080 --name=voting-app-one jendaredocker/jendarey-voting-app-new:latest
 
 # Please you use tomcat 10.1.13
 # download tomcat 10.1.13-jdk17
