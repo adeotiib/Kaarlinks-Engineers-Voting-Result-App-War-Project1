@@ -50,11 +50,15 @@ RUN chmod 755 -R tomcat10 && \
 # Move the application war file to Tomcat's webapps directory
 RUN cp votingappweb.war tomcat10/webapps/
 
+# Expose the default Tomcat port
+EXPOSE 8080
+
 # Switch to the 'tomcat' user
 USER tomcat
 
 # Start Tomcat
 CMD ["./tomcat10/bin/startup.sh"]
+
 
 
 # docker build . -t jendaredocker/jendarey-voting-app-new
