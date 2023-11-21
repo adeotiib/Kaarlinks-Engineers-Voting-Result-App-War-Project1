@@ -4,9 +4,6 @@ FROM ubuntu:latest as builder
 # Set the working directory
 WORKDIR /app
 
-# Change hostname to 'elb-test'
-RUN hostnamectl set-hostname voteapp
-
 # Update and upgrade the system
 RUN apt-get update && apt-get upgrade -y
 
