@@ -30,7 +30,7 @@ public class VotingResultAppApplication {
             String hostname = localHost.getHostName();
             String ipAddress = localHost.getHostAddress();
 
-            model.addAttribute("title", "Jendarey DevOps Bootcamp Training");
+            model.addAttribute("title", "Kaarlinks DevOps Bootcamp Training");
             model.addAttribute("hostname", "Hostname: " + hostname);
             model.addAttribute("ipAddress", "IP Address: " + ipAddress);
             model.addAttribute("courses", Course.values());
